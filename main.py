@@ -1,23 +1,38 @@
-import os
-import mutagen
+import sqlite3
 import miniaudio
-import numpy as np
-from scipy.io.wavfile import write
+import fs
+from api import startAPI
+import asyncio
+import websockets
+import re
+from multiprocessing import Process
 
-music_folder = '/home/olegsea/Music'
-# music_folder = input()
+music_folder = '/e/Files/Music'
 
-# audiofile = mutagen.File('/home/olegsea/Music/Camellia/Force! (Album)/12 かめりあ - ふぉーす！.flac')
-audiofile = mutagen.File(f'{music_folder}/audio200.mp3')
-print(audiofile)
 
-# stream = miniaudio.stream_file(f'/home/olegsea/music/camellia/force! (album)/12 かめりあ - ふぉーす！.flac')
-# stream = miniaudio.stream_file(f'{music_folder}/audio200.mp3')
-# with miniaudio.PlaybackDevice() as device:
-#   device.start(stream)
-#   input()
-file = miniaudio.decode_file(f'input.mp3')
-# file = miniaudio.decode_file(f'{music_folder}/audio200.mp3')
-print(file)
+async def handler(websocket):
+    async for message in websocket:
+        if re.search('^play (.*)$', message):
+            song = music_folder + re.findall('^play (.*)$', message)[0]
 
-write('test.wav', file.sample_rate, np.vstack((np.array(file.samples[0::2]), np.array(file.samples[1::2]))).transpose())
+            raw_data = miniaudio.decode_file(song)
+            for i in range(0, len(raw_data.samples), raw_data.sample_rate):
+                await websocket.send(bytes(raw_data.samples[i:i+raw_data.sample_rate]))
+
+
+async def main():
+    async with websockets.serve(handler, "", 8001):
+        await asyncio.Future() 
+
+
+if __name__ == "__main__":
+    con = sqlite3.connect('data/music.db')
+    cur = con.cursor()
+
+    fs.scanDir(con, cur, music_folder)
+
+    api = Process(target=startAPI)
+    api.start()
+    asyncio.run(main())
+
+    

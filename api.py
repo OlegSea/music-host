@@ -1,9 +1,31 @@
-from flask import Flask
+from flask import Flask, request, make_response
 from flask_restful import Resource, Api, reqparse
 from gevent.pywsgi import WSGIServer
 import sqlite3
+import miniaudio
 import asyncio
+import json
 
+music_folder = "/e/Files/Music"
+
+initialState = {
+    "currentSong": "",
+    "currentSample": 0,
+    "currentSamples": [],
+    "currentLength": 0,
+    "currentSampleRate": 0,
+}
+
+# def newSong(songName):
+#     song = music_folder + songName
+#     raw_data = miniaudio.decode_file(song)
+    # currentUsers[ip] = initialState
+    # currentUsers[ip]["currentLength"] = len(raw_data.samples)
+    # currentUsers[ip]["currentSamples"] = raw_data.samples
+    # currentUsers[ip]["currentSampleRate"] = raw_data.sample_rate
+    # currentUsers[ip]["currentSample"] = 0
+    # currentUsers[ip]["currentSong"] = song
+    
 
 def defaultGet(db, cargs):
     con = sqlite3.connect('data/music.db')
@@ -46,6 +68,14 @@ class Songs(Resource):
     def get(self):
         return defaultGet('songs', ['song_id', 'song_name', 'artist_name', 'album_name', 'genre', 'date', 'song_file_name'])
 
+    def post(self):
+        songName = request.data.decode('UTF-8')
+        song = music_folder + songName
+        raw_data = miniaudio.decode_file(song)
+        response = make_response(bytes(raw_data.samples))
+        response.headers.set('Content-Type', 'application/octet-stream')
+        return response
+
 
 class Artists(Resource):
     def get(self):
@@ -63,6 +93,10 @@ api = Api(app)
 api.add_resource(Songs, '/api/songs')
 api.add_resource(Artists, '/api/artists')
 api.add_resource(Albums, '/api/albums')
+
+@app.route('/api/songs/<string:song>')
+def song(song):
+    newSong(song)
 
 def startAPI():
     http_server = WSGIServer(('', 5000), app)

@@ -1,7 +1,9 @@
 import os
 import sqlite3
+import re
 import mutagen
 
+audioFormats = ['mp3', 'flac', 'ogg', 'opus']
 
 def __scanDir(cur, path, relativePath='/'):
     if path[-1] != '/':
@@ -12,6 +14,8 @@ def __scanDir(cur, path, relativePath='/'):
             folderName = file.name
             directory.append(
                 __scanDir(cur, f'{path}/{folderName}', relativePath=f'{relativePath}{folderName}/'))
+        elif re.search('.*\.(.*)$', file.name).group(1) not in audioFormats:
+            pass
         else:
             audiofile = mutagen.File(f'{path}{file.name}')
 
@@ -23,15 +27,17 @@ def __scanDir(cur, path, relativePath='/'):
                 'artist': 'Unknown artist' if 'artist' not in audiofile else ', '.join(audiofile['artist']),
                 'album': 'Unknown album' if 'album' not in audiofile else ', '.join(audiofile['album']),
                 'genre': 'Unknown' if 'genre' not in audiofile else ', '.join(audiofile['genre']),
-                'date': 'Unknown' if 'date' not in audiofile else ', '.join(audiofile['date'])
+                'date': 'Unknown' if 'date' not in audiofile else ', '.join(audiofile['date']),
+                'sample_rate': audiofile.info.sample_rate,
+                'length': int(audiofile.info.length),                
             }
             cur.execute(
                 '''INSERT OR IGNORE INTO artists (artist_name) VALUES (?)''', (metadata['artist'],))
             cur.execute('''INSERT OR IGNORE INTO albums (album_name, artist_name) VALUES (?, ?)''',
                         (metadata['album'], metadata['artist'],))
 
-            cur.execute('''INSERT OR IGNORE INTO songs (song_name, artist_name, album_name, genre, date, song_file_name) VALUES (?, ?, ?, ?, ?, ?)
-            ''', (metadata['name'], metadata['artist'], metadata['album'], metadata['genre'], metadata['date'], relativePath + file.name))
+            cur.execute('''INSERT OR IGNORE INTO songs (song_name, artist_name, album_name, genre, date, song_file_name, sample_rate, length) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (metadata['name'], metadata['artist'], metadata['album'], metadata['genre'], metadata['date'], relativePath + file.name, metadata['sample_rate'], metadata['length']))
             directory.append(relativePath + file.name)
 
     return directory
@@ -48,7 +54,7 @@ def scanDir(con, cur, path):
   ''')
 
   cur.execute('''CREATE TABLE IF NOT EXISTS songs
-                (song_id integer primary key, song_name text, artist_name text, album_name text, genre text, date text, song_file_name text, unique(song_name))''')
+                (song_id integer primary key, song_name text, artist_name text, album_name text, genre text, date text, song_file_name text, sample_rate integer, length integer, unique(song_name))''')
 
   __scanDir(cur, path)
 

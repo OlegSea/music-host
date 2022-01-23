@@ -44,7 +44,7 @@ def defaultGet(db, cargs):
 
 class Songs(Resource):
     def get(self):
-        return defaultGet('songs', ['song_id', 'song_name', 'artist_name', 'album_name', 'genre', 'date', 'song_file_name'])
+        return defaultGet('songs', ['song_id', 'song_name', 'artist_name', 'album_name', 'genre', 'date', 'song_file_name', 'sample_rate', 'length'])
 
 
 class Artists(Resource):

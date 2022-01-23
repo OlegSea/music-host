@@ -1,5 +1,5 @@
 import sqlite3
-import miniaudio
+import json
 import fs
 from api import startAPI
 import asyncio
@@ -7,6 +7,7 @@ import websockets
 from websockets.exceptions import ConnectionClosedError, ConnectionClosed
 import re
 import miniupnpc
+import miniaudio
 from multiprocessing import Process
 
 music_folder = '/e/Files/Music'
@@ -41,9 +42,8 @@ async def main():
     async with websockets.serve(handler, "", 8001):
         await asyncio.Future() 
 
-
 if __name__ == "__main__":
-    con = sqlite3.connect('data/music.db')
+    con = sqlite3.connect("data/music.db")
     cur = con.cursor()
 
     upnp = miniupnpc.UPnP()
@@ -64,4 +64,3 @@ if __name__ == "__main__":
     api.start()
     asyncio.run(main())
 
-    

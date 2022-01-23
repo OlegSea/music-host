@@ -38,9 +38,11 @@ async def handler(websocket):
     except ConnectionClosed:
         pass
 
+
 async def main():
     async with websockets.serve(handler, "", 8001):
         await asyncio.Future() 
+
 
 if __name__ == "__main__":
     con = sqlite3.connect("data/music.db")

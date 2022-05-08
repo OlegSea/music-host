@@ -1,5 +1,6 @@
 import sqlite3
 import json
+from sys import argv
 import fs
 from api import startAPI
 import asyncio
@@ -10,7 +11,7 @@ import miniupnpc
 import miniaudio
 from multiprocessing import Process
 
-music_folder = '/e/Files/Music'
+music_folder = argv[1]
 
 
 async def handler(websocket):
